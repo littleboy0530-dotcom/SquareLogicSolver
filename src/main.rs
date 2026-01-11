@@ -6,6 +6,13 @@ enum Celltype {
     O,
 }
 
+//현재 풀이 상태
+enum SolveState{
+    Progress,
+    Stuck,
+    Solved,
+}
+
 //보드 구조체
 struct Board {
     cells: Vec<Vec<Celltype>>,
@@ -242,6 +249,45 @@ impl Board {
     }
 }
 
+fn propagate_logic(board: &mut Board, 
+    row_hints: &mut Vec<Hint>, col_hints: &mut Vec<Hint>
+) -> SolveState {
+    loop {
+        let mut changed_flag = false;
+
+        for hint in row_hints.iter_mut() {
+            board.filtering_candidate(hint);
+            if board.reflection_candidate_info(hint) {
+                changed_flag = true;
+                board.display();
+            }
+        }
+
+        for hint in col_hints.iter_mut() {
+            board.filtering_candidate(hint);
+            if board.reflection_candidate_info(hint) {
+                changed_flag = true;
+                board.display();
+            }
+        }
+
+        if board.is_complete() {
+            return SolveState::Solved;
+        }
+
+        if changed_flag == false {
+            return SolveState::Stuck;
+        }
+    }
+}
+
+// fn dfs_solve(row_hint:Vec<Hint>, col_hint:Vec<Hint>, size: usize) {
+//     for i in 0..size {
+//         let row_candidate_size = row_hint[i].candidates.len();
+//         let col_candidate_size = col_hint[i].candidates.len();
+//     }
+// }
+
 fn main() {
     let size = 20;
     
@@ -327,37 +373,18 @@ fn main() {
 
     println!("후보 생성 완료");
 
-    let mut changed_flag = false;
-    loop {
-        for hint in row_hints.iter_mut() {
-            board.filtering_candidate(hint);
-            if board.reflection_candidate_info(hint) {
-                changed_flag = true;
-                board.display();
-            }
-        }
-
-        for hint in col_hints.iter_mut() {
-            board.filtering_candidate(hint);
-            if board.reflection_candidate_info(hint) {
-                changed_flag = true;
-                board.display();
-            }
-        }
-
-        if board.is_complete() {
-            println!("\n 완성!\n 결과:");
+    match propagate_logic(&mut board, &mut row_hints, &mut col_hints) {
+        SolveState::Solved => {
+            println!("완성!");
             board.display();
-            break;
-        }
-
-        if changed_flag == false {
-            println!("dfs필요");
+        },
+        SolveState::Stuck => {
+            println!("DFS 필요");
             board.display();
-            break;
+        },
+        SolveState::Progress => {
+            panic!("UNREACHABLE!!");
         }
-
-        changed_flag = false;
     }
 }
 
